@@ -1,0 +1,421 @@
+================================================================================
+    BRAIN TUMOR SEGMENTATION - COMPLETE BEGINNER'S GUIDE
+    How to Run This Project for a Demo / Presentation
+================================================================================
+
+Hello! This guide will walk you through EVERYTHING you need to do to get this
+brain tumor segmentation project running on your computer. Follow each step
+in order. No prior experience needed.
+
+
+================================================================================
+    TABLE OF CONTENTS
+================================================================================
+
+    1. PREREQUISITES (What You Need Before Starting)
+    2. INSTALLING PYTHON (If Not Already Installed)
+    3. SETTING UP THE PROJECT
+    4. GETTING THE DATASET (BraTS MRI Data)
+    5. RUNNING THE STREAMLIT WEB APP (Interactive Demo)
+    6. TRAINING THE MODEL (Optional - Takes Hours)
+    7. RUNNING INFERENCE ON A SINGLE PATIENT
+    8. EVALUATING THE MODEL
+    9. WHAT TO SHOW YOUR PROFESSOR
+   10. TROUBLESHOOTING COMMON ERRORS
+
+
+================================================================================
+    1. PREREQUISITES
+================================================================================
+
+You need:
+  [✓] A Windows/Mac/Linux computer
+  [✓] Python 3.10, 3.11, or 3.12 installed (3.12 recommended)
+       NOTE: Python 3.14 works but 3.12 is most stable for PyTorch
+  [✓] At least 8 GB RAM (16 GB recommended)
+  [✓] At least 60 GB free disk space (for dataset + model)
+  [✓] NVIDIA GPU with CUDA (optional but HIGHLY recommended for training)
+       - Without GPU: inference takes ~5 min per scan
+       - With GPU: inference takes ~30 seconds per scan
+  [✓] Internet connection (to download packages and dataset)
+
+
+================================================================================
+    2. INSTALLING PYTHON (Skip if already installed)
+================================================================================
+
+STEP 2.1: Download Python
+    Go to: https://www.python.org/downloads/
+    Download Python 3.12.x (click the big yellow button)
+
+STEP 2.2: Install Python
+    Run the installer
+    >>> IMPORTANT: CHECK THE BOX "Add Python to PATH" <<<
+    Click "Install Now"
+
+STEP 2.3: Verify Installation
+    Open Command Prompt (Windows) or Terminal (Mac/Linux)
+    Type:
+        python --version
+    You should see something like: Python 3.12.x
+
+
+================================================================================
+    3. SETTING UP THE PROJECT
+================================================================================
+
+STEP 3.1: Open a terminal/command prompt
+
+STEP 3.2: Navigate to the project folder
+    Type:
+        cd "D:\AI STUFF\PROJECTS\MRI"
+    (Replace with your actual project path)
+
+STEP 3.3: (RECOMMENDED) Create a virtual environment
+    This keeps the project's packages separate from other projects.
+    Type:
+        python -m venv venv
+
+    Then activate it:
+        Windows:    venv\Scripts\activate
+        Mac/Linux:  source venv/bin/activate
+
+    You should see (venv) at the start of your command line.
+
+STEP 3.4: Install PyTorch
+    If you have an NVIDIA GPU:
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+    If you do NOT have a GPU (CPU only):
+        pip install torch torchvision
+
+    This downloads ~2.5 GB. Be patient.
+
+STEP 3.5: Install all other dependencies
+    Type:
+        pip install -r requirements.txt
+
+    This installs: MONAI, NiBabel, SimpleITK, Streamlit, Matplotlib, etc.
+    Takes 2-5 minutes depending on your internet speed.
+
+STEP 3.6: Verify everything installed
+    Type:
+        python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
+
+    You should see:
+        PyTorch: 2.x.x
+        CUDA available: True    (or False if no GPU)
+
+
+================================================================================
+    4. GETTING THE DATASET (BraTS MRI Data)
+================================================================================
+
+The BraTS (Brain Tumor Segmentation) dataset contains real MRI brain scans
+with expert-labeled tumor regions.
+
+OPTION A: Download BraTS 2021 (Full Dataset - ~50 GB)
+    1. Go to: https://www.synapse.org/#!Synapse:syn27046444
+    2. Create a free Synapse account
+    3. Accept the data use agreement
+    4. Download the Training data
+    5. Extract to: D:\AI STUFF\PROJECTS\MRI\data\raw\BraTS2021_Training\
+
+    After extraction, the folder should look like:
+        data/raw/BraTS2021_Training/
+        ├── BraTS2021_00000/
+        │   ├── BraTS2021_00000_t1.nii.gz
+        │   ├── BraTS2021_00000_t1ce.nii.gz
+        │   ├── BraTS2021_00000_t2.nii.gz
+        │   ├── BraTS2021_00000_flair.nii.gz
+        │   └── BraTS2021_00000_seg.nii.gz
+        ├── BraTS2021_00001/
+        │   ├── ...
+        └── ...  (1251 subjects total)
+
+OPTION B: Use Sample Data for Quick Demo (Recommended for first run)
+    If you just want to demo the app without the full dataset:
+    1. Go to: https://github.com/Project-MONAI/MONAI-extra-test-data
+    2. Or search "BraTS sample NIfTI" online
+    3. Download any 4 NIfTI files (T1, T1ce, T2, FLAIR) of one patient
+    4. You can upload these directly in the Streamlit app
+
+OPTION C: Use Kaggle (Easier Download)
+    1. Go to: https://www.kaggle.com/datasets/dschettler8845/brats-2021-task1
+    2. Download and extract to the same folder structure as Option A
+
+
+================================================================================
+    5. RUNNING THE STREAMLIT WEB APP (THE MAIN DEMO!)
+================================================================================
+
+This is what you want to show your professor! It's an interactive web
+interface where you upload MRI scans and see tumor segmentation results.
+
+STEP 5.1: Make sure you're in the project folder
+    cd "D:\AI STUFF\PROJECTS\MRI"
+
+STEP 5.2: Launch the app
+    streamlit run app/streamlit_app.py
+
+    OR if that doesn't work:
+    python -m streamlit run app/streamlit_app.py --server.headless true
+
+STEP 5.3: Open the app in your browser
+    A browser window should open automatically.
+    If not, go to: http://localhost:8501
+
+STEP 5.4: Using the app
+    The app has these sections:
+
+    LEFT SIDEBAR:
+        - Model Architecture: Choose "3D U-Net" or "Attention U-Net"
+        - Overlay Transparency: Adjust how see-through the tumor colors are
+        - View Plane: Switch between Axial, Sagittal, Coronal views
+        - Color Legend: Shows what each color means
+
+    MAIN AREA:
+        1. Upload 4 MRI files (T1, T1ce, T2, FLAIR) as .nii or .nii.gz
+        2. Click "Run Segmentation" 
+        3. View the results:
+           - Tumor volume statistics (in cm³)
+           - Interactive slice viewer with slider
+           - FLAIR image alongside segmentation overlay
+           - All 4 modalities comparison view
+
+    TUMOR COLORS:
+        🔵 Blue   = Necrotic / Non-Enhancing Tumor (NCR)
+        🟡 Yellow = Peritumoral Edema (ED)
+        🔴 Red    = Enhancing Tumor (ET)
+
+STEP 5.5: Stop the app
+    Press Ctrl+C in the terminal to stop the server.
+
+NOTE: The app will run with random model weights unless you have a trained
+checkpoint at checkpoints/best_model.pth. This means the segmentation
+results won't be accurate until you train the model (Step 6).
+For a demo, you can still show the INTERFACE and explain how it works.
+
+
+================================================================================
+    6. TRAINING THE MODEL (Optional - Takes Several Hours)
+================================================================================
+
+You only need this if you want actual accurate segmentation results.
+Training requires the full BraTS dataset (Step 4, Option A).
+
+STEP 6.1: Basic training command
+    python training/train.py --data_dir data/raw/BraTS2021_Training
+
+STEP 6.2: Training with recommended settings
+    python training/train.py \
+        --data_dir data/raw/BraTS2021_Training \
+        --model unet3d \
+        --lr 1e-4 \
+        --epochs 300 \
+        --batch_size 2
+
+STEP 6.3: Training with Attention U-Net (better model)
+    python training/train.py \
+        --data_dir data/raw/BraTS2021_Training \
+        --model attention_unet3d
+
+STEP 6.4: Monitor training progress
+    Open a NEW terminal and type:
+        tensorboard --logdir logs/
+    Then open: http://localhost:6006
+
+    You'll see live graphs of:
+        - Training loss (should go down)
+        - Validation loss (should go down)
+        - Validation Dice score (should go up, target: 0.85+)
+        - Learning rate schedule
+
+STEP 6.5: Resume interrupted training
+    If training stops (power outage, etc.):
+        python training/train.py --resume checkpoints/best_model.pth
+
+TRAINING TIMES (approximate):
+    - NVIDIA RTX 3060:  ~12-18 hours for 300 epochs
+    - NVIDIA RTX 3080:  ~8-12 hours
+    - NVIDIA RTX 4090:  ~4-6 hours
+    - CPU only:         ~3-5 DAYS (not recommended)
+
+WHAT HAPPENS DURING TRAINING:
+    1. Model loads MRI scans and extracts random 128x128x128 patches
+    2. Patches are augmented (flipped, rotated, noise added)
+    3. Model predicts tumor regions, compares to expert labels
+    4. Weights are updated to minimize the Dice + CrossEntropy loss
+    5. Every 25 epochs, a checkpoint is saved
+    6. The best model (by validation Dice) is saved as best_model.pth
+    7. Training stops early if no improvement for 50 epochs
+
+
+================================================================================
+    7. RUNNING INFERENCE ON A SINGLE PATIENT
+================================================================================
+
+After training (or with a pretrained model):
+
+    python inference/predict.py \
+        --checkpoint checkpoints/best_model.pth \
+        --input data/raw/BraTS2021_Training/BraTS2021_00000 \
+        --output predictions/
+
+This will:
+    1. Load the 4 MRI modalities for that patient
+    2. Run sliding window inference (patches with 50% overlap)
+    3. Post-process (remove small false positive regions)
+    4. Save the result as a NIfTI file in predictions/
+
+Add --tta for slightly better accuracy (2-3x slower):
+    python inference/predict.py \
+        --checkpoint checkpoints/best_model.pth \
+        --input data/raw/BraTS2021_Training/BraTS2021_00000 \
+        --output predictions/ \
+        --tta
+
+
+================================================================================
+    8. EVALUATING THE MODEL
+================================================================================
+
+Run evaluation on the full validation set:
+
+    python evaluation/evaluate.py \
+        --checkpoint checkpoints/best_model.pth \
+        --data_dir data/raw/BraTS2021_Training \
+        --hausdorff
+
+This will:
+    1. Run inference on every validation subject
+    2. Compute metrics: Dice, IoU, Sensitivity, Specificity, HD95
+    3. Print a summary table like:
+
+        ================================================================
+          Evaluation Summary (250 subjects)
+        ================================================================
+          Metric                      Mean        Std
+          -----------------------------------------
+          ET_Dice                    0.8200     0.1500
+          TC_Dice                    0.8800     0.0900
+          WT_Dice                    0.9100     0.0400
+          Mean_Dice                  0.8700     0.0600
+        ================================================================
+
+    4. Save per-subject results to: outputs/evaluation_results.csv
+
+
+================================================================================
+    9. WHAT TO SHOW YOUR PROFESSOR
+================================================================================
+
+Here's a suggested demo flow (15-20 minutes):
+
+PART 1: Introduction (3 min)
+    - Open README.md and show the project overview
+    - Explain: "Brain tumor segmentation from MRI using deep learning"
+    - Show the dataset structure (4 MRI modalities + labels)
+    - Explain why this matters clinically
+
+PART 2: Code Architecture (5 min)
+    - Show the project folder structure (8 modules, clean separation)
+    - Open config.py - "Central configuration with all hyperparameters"
+    - Open models/unet3d.py - "3D U-Net with encoder-decoder + skip connections"
+    - Open models/attention_unet.py - "Attention gates for better small tumor detection"
+    - Open models/losses.py - "Dice + CrossEntropy loss for class imbalance"
+
+PART 3: Live Demo (5 min)
+    - Run: streamlit run app/streamlit_app.py
+    - Show the web interface
+    - Upload MRI files (if you have them)
+    - Show the segmentation overlay
+    - Use the slice slider to navigate through the brain
+    - Switch between Axial/Sagittal/Coronal views
+    - Show tumor volume statistics
+
+PART 4: Training & Evaluation (3 min)
+    - Open training/train.py - "Full training pipeline with AMP, gradient
+      accumulation, checkpointing"
+    - Show TensorBoard graphs (if you trained)
+    - Show evaluation metrics table
+    - Open evaluation/visualize.py - "Publication-quality visualizations"
+
+PART 5: Advanced Features (2 min)
+    - Show evaluation/gradcam.py - "Explainability via Grad-CAM"
+    - Show inference/predict.py - "Post-processing with connected components"
+    - Mention future improvements (Swin-UNETR, uncertainty, ONNX export)
+
+KEY TALKING POINTS FOR YOUR PROFESSOR:
+    ✓ "Uses 3D convolutions for volumetric data, not 2D slice-by-slice"
+    ✓ "Handles extreme class imbalance with Dice loss"
+    ✓ "Patch-based training with foreground bias for efficient learning"
+    ✓ "Attention gates improve small tumor detection"
+    ✓ "Mixed precision training for GPU memory efficiency"
+    ✓ "Test-time augmentation for better inference accuracy"
+    ✓ "Interactive deployment with Streamlit"
+    ✓ "BraTS-standard evaluation metrics (Dice, HD95 per region)"
+
+
+================================================================================
+    10. TROUBLESHOOTING COMMON ERRORS
+================================================================================
+
+ERROR: "ModuleNotFoundError: No module named 'torch'"
+FIX:   pip install torch torchvision
+
+ERROR: "'streamlit' is not recognized"
+FIX:   pip install streamlit
+       OR: python -m streamlit run app/streamlit_app.py
+
+ERROR: "No module named 'monai'"
+FIX:   pip install monai
+
+ERROR: "CUDA out of memory"
+FIX:   Reduce batch size:
+       python training/train.py --batch_size 1 --grad_accum 8
+       Or use smaller patches: edit config.py, change crop_size to (96,96,96)
+
+ERROR: "No subject folders found"
+FIX:   Check that your data path is correct and the BraTS folders exist
+       The path should point to the folder CONTAINING the subject folders
+
+ERROR: "Microsoft Visual C++ 14.0 required" (when installing packages)
+FIX:   Use "monai" instead of "monai[all]" in requirements.txt
+       (This is already fixed in the provided requirements.txt)
+
+ERROR: "FileNotFoundError: No checkpoint found"
+FIX:   You need to train the model first (Step 6) or download a
+       pretrained checkpoint. The app will still work in demo mode
+       with random weights.
+
+ERROR: Streamlit shows "Please upload all 4 MRI modalities"
+FIX:   This is normal! You need to upload all 4 NIfTI files
+       (T1, T1ce, T2, FLAIR) to run segmentation.
+
+
+================================================================================
+    QUICK START CHEAT SHEET
+================================================================================
+
+    # 1. Navigate to project
+    cd "D:\AI STUFF\PROJECTS\MRI"
+
+    # 2. Install everything (one-time setup)
+    pip install torch torchvision
+    pip install -r requirements.txt
+
+    # 3. Launch the demo app
+    streamlit run app/streamlit_app.py
+
+    # 4. Train the model (needs BraTS data)
+    python training/train.py --data_dir data/raw/BraTS2021_Training
+
+    # 5. Evaluate
+    python evaluation/evaluate.py --checkpoint checkpoints/best_model.pth
+
+    That's it! 🎉
+
+================================================================================
+    END OF GUIDE
+================================================================================

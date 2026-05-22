@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+
+# Data
+data/raw/
+data/processed/
+*.nii.gz
+*.nii
+
+# Checkpoints and logs
+checkpoints/
+logs/
+outputs/
+predictions/
+*.pth
+*.pt
+*.onnx
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code / IDEs
+.vscode/
+.idea/
+*.swp

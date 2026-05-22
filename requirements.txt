@@ -1,0 +1,37 @@
+# ============================================================
+# Brain Tumor Segmentation — Dependencies
+# ============================================================
+# Install:  pip install -r requirements.txt
+# GPU note: Install PyTorch with CUDA from https://pytorch.org
+# ============================================================
+
+# ------ Core Deep Learning ------
+torch>=2.1.0
+torchvision>=0.16.0
+
+# ------ Medical Imaging ------
+monai>=1.3.0
+nibabel>=5.2.0
+SimpleITK>=2.3.0
+
+# ------ Scientific Computing ------
+numpy>=1.24.0
+scipy>=1.11.0
+scikit-learn>=1.3.0
+scikit-image>=0.22.0
+
+# ------ Visualization ------
+matplotlib>=3.8.0
+plotly>=5.18.0
+opencv-python>=4.8.0
+
+# ------ Deployment ------
+streamlit>=1.29.0
+
+# ------ Training Utilities ------
+tensorboard>=2.15.0
+tqdm>=4.66.0
+
+# ------ Configuration & Logging ------
+pyyaml>=6.0.1
+rich>=13.7.0
