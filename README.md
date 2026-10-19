@@ -1,198 +1,98 @@
-# 🧠 Multimodal 3D Brain Tumor Segmentation from MRI
+# 🧠 Multimodal 3D Brain Tumor Segmentation from MRI (BraTS)
 
-Automatic brain tumor segmentation from 3D MRI scans using standard 3D U-Net and Attention 3D U-Net deep learning models on the BraTS (Brain Tumor Segmentation) dataset.
+<div align="center">
 
-This repository implements a production-ready, modular deep learning pipeline:
-`Data Loading ➔ Preprocessing ➔ Augmentation ➔ Patch Extraction ➔ Training ➔ Evaluation ➔ Explainability ➔ Web Deployment`
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.1%2B%20%7C%20CUDA-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![MONAI](https://img.shields.io/badge/Medical_AI-MONAI-107C41?style=for-the-badge)](https://monai.io/)
+[![NiBabel](https://img.shields.io/badge/Imaging-NiBabel%20NIfTI-02569B?style=for-the-badge)](https://nipy.org/nibabel/)
+[![Streamlit](https://img.shields.io/badge/Web_UI-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Dataset: BraTS](https://img.shields.io/badge/Dataset-BraTS%20Multimodal%20MRI-7952B3?style=for-the-badge)](http://braintumorsegmentation.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
----
+**An end-to-end, production-ready deep learning pipeline for automated glioma segmentation from 3D multimodal MRI scans (T1, T1ce, T2, FLAIR) using 3D U-Net and Attention 3D U-Net with Grad-CAM explainability and interactive Streamlit deployment.**
 
-## 📋 Table of Contents
-1. [Project Overview](#-project-overview)
-2. [Technology Stack](#%EF%B8%8F-technology-stack)
-3. [System Architecture](#%EF%B8%8F-system-architecture)
-4. [Approach & Design Philosophy](#-approach--design-philosophy)
-5. [Project Structure](#-project-structure)
-6. [Data Schema & Labels](#-data-schema--labels)
-7. [Environment & Configuration](#-environment--configuration)
-8. [Installation & Setup](#-installation--setup)
-9. [Running the Application](#-running-the-application)
-10. [Evaluation & Testing](#-evaluation--testing)
-11. [Explainability (Grad-CAM)](#-explainability-grad-cam)
-12. [Deployment](#-deployment)
-13. [Limitations & Future Work](#-limitations--future-work)
-14. [Contributors & License](#-contributors--license)
+[Overview](#-project-overview) • [Architecture](#%EF%B8%8F-system-architecture) • [Clinical Labels](#-data-schema--labels) • [Quick Start](#-installation--setup) • [Web Application](#-running-the-web-interface) • [Evaluation](#-evaluation--testing) • [Explainability](#-explainability-grad-cam)
+
+</div>
 
 ---
 
 ## 🧠 Project Overview
-Brain tumors (specifically gliomas) are highly aggressive and show diverse shape, size, and intensity properties on MRI. Manual delineation of tumor boundaries is time-consuming (30–60 minutes per patient), subjective, and prone to inter-observer variability. 
 
-This project provides a fully automated pipeline that inputs **4 MRI modalities (T1, T1-contrast, T2, and FLAIR)** and segment the volume into three clinical sub-regions:
-1. **Enhancing Tumor (ET)**: Active tumor parts.
-2. **Tumor Core (TC)**: The necrotic core + active tumor.
-3. **Whole Tumor (WT)**: The entire abnormal area, including peritumoral edema.
+Brain tumors (specifically high-grade and low-grade gliomas) are among the most aggressive central nervous system neoplasms. Manual delineation of tumor margins across volumetric MRI is time-consuming (30–60 minutes per patient), subjective, and prone to inter-observer variability.
 
----
-
-## 🛠️ Technology Stack
-* **Programming Language:** Python 3.10 / 3.11 / 3.12
-* **Deep Learning Framework:** PyTorch (`torch`, `torchvision`)
-* **Medical Imaging Libraries:** 
-  * `MONAI` (Medical Open Network for AI) for medical deep learning utilities.
-  * `NiBabel` for loading and writing NIfTI volumetric data (`.nii`, `.nii.gz`).
-  * `SimpleITK` for medical image registration and spacing utilities.
-* **Scientific Computing:** `NumPy`, `SciPy`, `Scikit-learn`, `Scikit-image`
-* **Visualization & Diagnostics:** `Matplotlib`, `Plotly`, `OpenCV`, `TensorBoard` for tracking runs.
-* **Interactive Frontend:** `Streamlit` (interactive UI for medical upload & visualization)
-* **Formatting & CLI Tools:** `pyyaml`, `rich`, `tqdm`
+This repository provides an automated, clinician-friendly pipeline that fuses **4 complementary MRI modalities** into a unified 4-channel 3D volume to segment three nested sub-regions with voxel-level precision:
+1. **Whole Tumor (WT)**: Complete extent of pathology, including peritumoral vasogenic edema.
+2. **Tumor Core (TC)**: Resection target containing necrosis, non-enhancing tumor, and active enhancing structures.
+3. **Enhancing Tumor (ET)**: Actively proliferating, hyper-vascularized rim.
 
 ---
 
 ## 🏗️ System Architecture
 
-The pipeline is decoupled into discrete, functional modules to ensure readability, scalability, and ease of deployment:
+```mermaid
+flowchart TD
+    subgraph InputScans ["📂 Multimodal MRI Volumes (NIfTI)"]
+        T1["T1-Weighted"]
+        T1ce["T1-Contrast Enhanced"]
+        T2["T2-Weighted"]
+        FLAIR["FLAIR"]
+    end
 
-```
-[ Multimodal MRI Scans ] (T1, T1ce, T2, FLAIR)
-          │
-          ▼
-[ Preprocessing (transforms.py) ] ➔ Spacing & Z-score Intensity Normalisation
-          │
-          ▼
-[ Patch Extraction (patch_extraction.py) ] ➔ Crop 128x128x128 foreground-biased patches
-          │
-          ▼
-[ Data Augmentation (augmentation.py) ] ➔ 3D Rotation, Flip, Elastic Deforms, Noise
-          │
-          ▼
-[ Deep Learning Core (models/) ] ➔ 3D U-Net / Attention 3D U-Net
-          │
-          ▼
-┌───────────────────┴───────────────────┐
-▼                                       ▼
-[ Training (trainer.py) ]        [ Inference (predict.py) ]
-  - Mixed Precision (AMP)          - Sliding Window
-  - Dice + Cross-Entropy Loss      - Connected Component Clean-up
-  - Cosine Scheduler               - Post-processing
-          │                             │
-          ▼                             ▼
-[ TensorBoard Logs / Checkpoints ]  [ Streamlit UI & Visualizations ]
-```
+    subgraph Preprocessing ["⚙️ Spatial & Intensity Normalization"]
+        T1 & T1ce & T2 & FLAIR --> VoxelSpacing["Resample Spacing (1.0 x 1.0 x 1.0 mm)"]
+        VoxelSpacing --> Normalization["Z-Score Intensity Normalization (Brain Masked)"]
+        Normalization --> PatchExtract["Foreground-Biased 128x128x128 Patch Extraction"]
+        PatchExtract --> Augment["3D Augmentation (Rotations, Elastic Deform, Noise)"]
+    end
 
-### High-Level Component Interactions:
-1. **Data Layer (`data/`, `preprocessing/`):** Reads volumetric NIfTI datasets, resamples voxels to a consistent physical spacing ($1.0 \times 1.0 \times 1.0\text{ mm}$), normalises intensity values, and applies augmentations.
-2. **Model Layer (`models/`):** Provides model definitions (3D convolutions, skip connections, and attention mechanisms) and robust losses.
-3. **Execution Layer (`training/`, `evaluation/`, `inference/`):** Manages optimization loops, mixed-precision arithmetic (AMP), gradient accumulation, and test-time evaluations.
-4. **Presentation Layer (`app/`):** Streamlit-based web dashboard allowing clinicians/users to drag-and-drop scans, execute predictions, inspect interactive slices, and view tumor statistics.
+    subgraph DLModel ["🧠 Deep Learning Core"]
+        Augment --> ModelChoice{"Architecture Selection"}
+        ModelChoice -->|Baseline| UNet3D["3D U-Net (Encoder-Decoder + Skip Links)"]
+        ModelChoice -->|Attention| AttnUNet3D["Attention 3D U-Net (Attention Gates)"]
+    end
 
----
-
-## 💡 Approach & Design Philosophy
-
-### 1. 3D Spatial Context vs. 2D Slices
-Traditional CNNs operate slice-by-slice (2D). However, brains and tumors are 3D structures. This pipeline uses **3D Convolutions** throughout the network to capture contextual information across the sagittal, coronal, and axial planes simultaneously.
-
-### 2. Encoder-Decoder with Skip Connections (U-Net)
-The primary network architecture is a **3D U-Net**. The encoder compresses the spatial dimensions while extracting high-level semantic features (what is a tumor). The decoder reconstructs spatial details (where is the tumor). Skip connections pass fine-grained localization features directly from the encoder to the decoder.
-
-### 3. Attention Gates (Attention U-Net)
-To suppress background noise (healthy brain tissues) and focus the network on irregular tumor boundaries, we implement an **Attention 3D U-Net**. At each skip connection, an attention gate uses features from the decoder path to prune redundant encoder activations, resulting in higher precision on small structures (like Enhancing Tumor) without significant parameters overhead.
-
-### 4. Handling Severe Class Imbalance
-Tumors occupy a very small percentage of the total brain volume (often $< 5\%$). Standard cross-entropy loss would bias the network to predict the background (healthy tissue). We address this by using **Dice-Cross Entropy Loss (`DiceCELoss`)** and **Focal Loss** to penalise misclassifications on minority target regions heavily.
-
-### 5. Memory Efficiency & Patches
-Due to massive memory demands of 3D convolutions, training on full volumes ($240 \times 240 \times 155$ voxels) is impossible on consumer GPUs. The pipeline extracts sub-volumes (**$128^3$ patches**) during training, utilizing **Foreground-Biased Sampling** to ensure $90\%$ of training patches contain tumor parts.
-
----
-
-## 📁 Project Structure
-
-```
-Brain-Tumor-Segmentation-3D/
-│
-├── config.py                     # Central configuration (hyperparameters, paths, config CLI)
-├── requirements.txt              # Project dependencies
-├── README.md                     # Technical system documentation
-├── .gitignore                    # Git rules for data, weights, logs and cache
-├── generate_demo_data.py         # Utility to generate small mock 3D NIfTI files for testing
-│
-├── data/
-│   ├── dataset.py                # Dataset loader for raw BraTS NIfTI files
-│   ├── demo_upload/              # Temporary upload directory for web app
-│   ├── processed/                # Destination folder for preprocessed volumes
-│   └── raw/                      # Root directory for raw dataset
-│
-├── preprocessing/
-│   ├── transforms.py             # Spacing, normalisation, and casting transforms
-│   ├── patch_extraction.py       # Patch samplers (Foreground-biased, Sliding window)
-│   └── augmentation.py           # 3D spatial & intensity augmentation pipelines
-│
-├── models/
-│   ├── unet3d.py                 # Standard 3D U-Net implementation
-│   ├── attention_unet.py         # Attention 3D U-Net implementation
-│   └── losses.py                 # Dice, Dice+CE, and Focal losses
-│
-├── training/
-│   ├── trainer.py                # PyTorch training loop engine (AMP, checkpointing)
-│   └── train.py                  # CLI training script entry point
-│
-├── evaluation/
-│   ├── metrics.py                # Dice, IoU, Sensitivity, Specificity, HD95 calculations
-│   ├── evaluate.py               # Dataset-wide evaluation script
-│   ├── visualize.py              # Visualisation generator (slice overlays)
-│   └── gradcam.py                # 3D Grad-CAM explainability hooks
-│
-├── inference/
-│   └── predict.py                # Sliding-window inference utility + post-processing
-│
-└── app/
-    ├── streamlit_app.py          # Interactive web UI dashboard
-    └── utils.py                  # Web app helper functions (volume stats, overlays)
+    subgraph OutputInference ["📊 Inference & Clinical Decision Support"]
+        UNet3D & AttnUNet3D --> PostProcessing["Sliding-Window Inference & Connected Components Clean-up"]
+        PostProcessing --> Metrics["Quantitative Evaluation (Dice Score, HD95)"]
+        PostProcessing --> GradCAM["3D Grad-CAM Saliency Maps"]
+        PostProcessing --> Streamlit["Streamlit Interactive 3D Viewer & Volumetrics"]
+    end
 ```
 
 ---
 
-## 📊 Data Schema & Labels
+## 🏷️ Data Schema & Labels
 
-### Input Modalities (4 channels):
-1. **T1:** Basic anatomical contrast.
-2. **T1ce (Gd):** Contrast-enhanced (Gadolinium) scan. Highlights active blood-brain-barrier breakdown.
-3. **T2:** Fluid-sensitive scan. Highlights edema and fluid.
-4. **FLAIR:** Fluid Attenuated Inversion Recovery. Suppresses healthy cerebrospinal fluid to highlight tumor-induced edema.
+The pipeline maps raw multi-class voxel annotations into standard BraTS clinical sub-regions:
 
-### Output Segmentations:
-Expert segmentations in the dataset contain 4 label values:
-* `0`: Background (Healthy brain tissue/Outside brain).
-* `1`: Necrotic / Non-enhancing tumor core (NCR/NET).
-* `2`: Peritumoral Edema (ED).
-* `4`: GD-enhancing tumor (ET).
+| BraTS Raw Label | Description | Segmented Sub-Region Included In |
+|:---:|---|---|
+| **Label 1** | Necrotic Core & Non-Enhancing Tumor (NCR/NET) | **Tumor Core (TC)** & **Whole Tumor (WT)** |
+| **Label 2** | Peritumoral Edema (ED) | **Whole Tumor (WT)** |
+| **Label 4** | Enhancing Tumor (ET) | **Enhancing Tumor (ET)**, **TC**, and **WT** |
 
-### Evaluation Sub-Regions (Target Classes):
-During evaluation and prediction, labels are combined into standard evaluation sub-regions:
-* **Enhancing Tumor (ET):** Label `4`
-* **Tumor Core (TC):** Labels `1` + `4`
-* **Whole Tumor (WT):** Labels `1` + `2` + `4`
+$$\text{Whole Tumor (WT)} = \text{Label } 1 + 2 + 4$$
+$$\text{Tumor Core (TC)} = \text{Label } 1 + 4$$
+$$\text{Enhancing Tumor (ET)} = \text{Label } 4$$
 
 ---
 
-## ⚙️ Environment & Configuration
-All configuration variables are stored in the `Config` dataclass in [config.py](file:///d:/AI%20STUFF/PROJECTS/MRI/config.py). You can adjust variables directly in the file, pass arguments to CLI scripts, or serialize configurations using YAML files.
+## 🛠️ Technology Stack
 
-### Key Configuration Variables:
-* `crop_size`: Size of training patches, default `(128, 128, 128)`.
-* `learning_rate`: Optimization step size, default `1e-4`.
-* `batch_size`: Batch size per step, default `2`.
-* `grad_accum_steps`: Accumulation steps to simulate larger batch size (default `4`, giving effective batch size = `8`).
-* `use_amp`: Enables FP16 precision. Recommended `True`.
-* `model_name`: `"unet3d"` or `"attention_unet3d"`.
+- **Core Deep Learning**: [PyTorch 2.1+](https://pytorch.org/) with CUDA acceleration & Automatic Mixed Precision (AMP).
+- **Medical Imaging Toolchain**: [MONAI](https://monai.io/), [NiBabel](https://nipy.org/nibabel/), [SimpleITK](https://simpleitk.org/).
+- **Scientific Computing**: NumPy, SciPy, Scikit-learn, Scikit-image.
+- **Diagnostics & Visualization**: TensorBoard, Matplotlib, Plotly, OpenCV.
+- **Clinician Frontend**: [Streamlit](https://streamlit.io/) with multi-planar slice inspection (Axial, Coronal, Sagittal).
 
 ---
 
-## ⚡ Installation & Setup
+## 🚀 Installation & Setup
 
-### 1. Set Up Environment
+### 1. Environment Configuration
+
 ```bash
 # Clone the repository
 git clone https://github.com/Rahim36712/Brain-Tumor-Segmentation-3D.git
@@ -200,18 +100,20 @@ cd Brain-Tumor-Segmentation-3D
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
 
-# Install PyTorch with GPU support (Highly Recommended)
-# For CUDA 12.1:
+# Install PyTorch with CUDA (e.g., CUDA 12.1)
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
-# Install requirements
+# Install medical imaging dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Dataset Setup
-To run training or evaluation, structure the dataset as follows inside the project directory:
+### 2. Dataset Hierarchy
+Organize your dataset under `data/raw/` in standard BraTS format:
 ```
 data/
 └── raw/
@@ -227,68 +129,93 @@ data/
 
 ---
 
-## 🚀 Running the Application
+## 🏃 Running the Application
 
-### 1. Generating Mock Test Data
-If you don't have the full BraTS dataset downloaded and want to verify the system works end-to-end, generate synthetic MRI scans instantly:
+### 1. Generate Synthetic Test Data
+If you do not have the raw BraTS files downloaded, you can generate synthetic 3D MRI volumes to test the complete pipeline:
 ```bash
 python generate_demo_data.py
 ```
-This generates a test subject `BraTS2021_DEMO_00000` under `data/raw/BraTS2021_Training/`.
+This writes a test subject `BraTS2021_DEMO_00000` to `data/raw/BraTS2021_Training/`.
 
-### 2. Running Training
-To start training the segmentation model:
+### 2. Launch Training Pipeline
 ```bash
-python training/train.py --data_dir data/raw/BraTS2021_Training --model attention_unet3d --epochs 300 --batch_size 2
+python training/train.py \
+    --data_dir data/raw/BraTS2021_Training \
+    --model attention_unet3d \
+    --epochs 300 \
+    --batch_size 2
 ```
-To monitor progress via TensorBoard:
+To monitor real-time loss curves and training metrics:
 ```bash
 tensorboard --logdir logs/
 ```
 
-### 3. Running the Web Interface
-To launch the interactive dashboard:
+### 3. Launch Interactive Streamlit Web UI
 ```bash
 streamlit run app/streamlit_app.py
 ```
-* **Step 1:** Select the model architecture on the sidebar.
-* **Step 2:** Drag and drop the 4 modalities (`t1`, `t1ce`, `t2`, `flair`) of NIfTI format.
-* **Step 3:** Click **"Run Segmentation"** to view interactive overlay slices and tumor volume statistics.
+- **Step 1**: Select your desired neural network (`3D U-Net` or `Attention 3D U-Net`).
+- **Step 2**: Drag-and-drop or upload the 4 NIfTI modal files (`t1`, `t1ce`, `t2`, `flair`).
+- **Step 3**: Click **"Run Segmentation"** to view interactive overlay slices across Axial, Coronal, and Sagittal planes with volumetric statistics.
 
 ---
 
 ## 📈 Evaluation & Testing
-To evaluate your model on your validation dataset and calculate Dice scores, Sensitivity, and Hausdorff distances:
+
+Evaluate model checkpoints against a test cohort with Dice similarity coefficient (DSC) and 95% Hausdorff Distance (HD95):
 ```bash
 python evaluation/evaluate.py \
     --checkpoint checkpoints/best_model.pth \
     --data_dir data/raw/BraTS2021_Training \
     --hausdorff
 ```
-Results are saved to `outputs/evaluation_results.csv`.
+Detailed per-case performance is exported to `outputs/evaluation_results.csv`.
 
 ---
 
-## 🔍 Explainability (Grad-CAM)
-Deep learning models are often criticised for being "black boxes". To provide transparency, we implement **3D Grad-CAM** to track the activation maps in the final convolutional layers. This maps out exactly which regions the network looked at to decide whether a tissue was enhancing tumor or edema.
-To visualize Grad-CAM overlays, use the script in `evaluation/gradcam.py`.
+## 🔍 Explainability (3D Grad-CAM)
+
+Deep learning networks in clinical domains must be interpretable. This repository implements **volumetric 3D Grad-CAM**, calculating activation gradients across encoder bottleneck layers to visually explain which spatial regions drove the model's tumor boundary decisions:
+```bash
+python evaluation/gradcam.py \
+    --checkpoint checkpoints/best_model.pth \
+    --data_dir data/raw/BraTS2021_Training
+```
 
 ---
 
-## 🌐 Deployment
-The interactive web application is designed with `Streamlit` and can be easily deployed to:
-* **Streamlit Community Cloud:** Connect this GitHub repository directly to Streamlit for cloud execution.
-* **Docker Container:** Package this application for local server environments or Kubernetes.
+## 📁 Repository Structure
+
+```
+Brain-Tumor-Segmentation-3D/
+├── app/                      # Streamlit interactive web dashboard
+│   └── streamlit_app.py
+├── checkpoints/              # Saved model weights (.pth)
+├── config.py                 # Hyperparameter, loss & path configuration
+├── data/                     # Data storage (raw, processed & demo)
+├── evaluation/               # Dice, HD95 metrics & Grad-CAM visualizer
+│   ├── evaluate.py
+│   └── gradcam.py
+├── generate_demo_data.py     # Synthetic 3D NIfTI generator
+├── inference/                # Sliding-window predictor & post-processing
+│   └── predict.py
+├── models/                   # 3D U-Net & Attention 3D U-Net architectures
+│   ├── unet3d.py
+│   └── attention_unet3d.py
+├── preprocessing/            # Resampling, Z-score normalization & patch cropping
+│   ├── augmentation.py
+│   ├── patch_extraction.py
+│   └── transforms.py
+├── training/                 # AMP-enabled training loops & loss functions
+│   ├── losses.py
+│   └── train.py
+├── requirements.txt          # Pinned Python dependencies
+└── README.md                 # Project documentation
+```
 
 ---
 
-## ⚠️ Limitations & Future Work
-* **Generalization:** Model is trained on skull-stripped and aligned BraTS datasets; raw clinical scans might need skull-stripping preprocessing (e.g., using HD-BET) before inference.
-* **Context Limit:** Standard patch training ($128^3$) may fail to capture global anatomical positioning. 
-* **Next Steps:** Export weights to **ONNX** format for faster inference times and explore **Swin-UNETR** (Transformer-based 3D segmentation).
-
----
-
-## 📄 License & Maintainers
-* **Project Owner / Maintainer:** RJ (rj@example.com)
-* **License:** MIT License. All rights reserved.
+<div align="center">
+  <sub>Deep Learning for Medical Image Computing — Precision, Transparency, Reliability.</sub>
+</div>
